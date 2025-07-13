@@ -40,31 +40,35 @@ This is a sophisticated crypto trading bot that combines **statistical arbitrage
 ## ✨ Features
 
 ### 🤖 Trading Strategies
-- **Statistical Arbitrage**: Cointegration-based pair trading
-- **Sentiment Analysis**: LLM-powered market sentiment scoring
-- **Signal Combination**: Multi-strategy signal fusion
-- **Portfolio Rebalancing**: Dynamic position management
+- **Statistical Arbitrage**: Cointegration-based pair trading with OLS hedge ratios
+- **Sentiment Analysis**: LLM-powered market sentiment scoring using VADER and GPT-3.5-turbo
+- **Signal Combination**: Multi-strategy signal fusion with consensus, weighted, and hybrid methods
+- **Portfolio Rebalancing**: Dynamic position management and correlation analysis
 - **Mean Reversion**: RSI, Bollinger Bands, MACD indicators
+- **Enhanced ML**: Machine learning signal filtering and optimization
 
 ### 📊 Data Collection
-- **Real-time Market Data**: Price, volume, order book
-- **Sentiment Sources**: Reddit, news APIs, social media
-- **Historical Data**: Backtesting and strategy validation
+- **Real-time Market Data**: Price, volume, order book from multiple exchanges
+- **Sentiment Sources**: Reddit, news APIs, social media, CryptoPanic
+- **Historical Data**: Backtesting and strategy validation with customizable timeframes
 - **Multi-Asset Support**: ETH, SOL, BTC, and 20+ cryptocurrencies
+- **WebSocket Streaming**: High-frequency data collection for real-time analysis
 
 ### 🛡️ Risk Management
-- **Position Sizing**: Dynamic allocation based on volatility
-- **Stop-Loss/Take-Profit**: Automated risk controls
+- **Position Sizing**: Dynamic allocation based on volatility and correlation
+- **Stop-Loss/Take-Profit**: Automated risk controls with trailing stops
 - **Portfolio Limits**: Maximum exposure and drawdown controls
 - **Correlation Analysis**: Diversification and risk mitigation
-- **Volatility Monitoring**: Real-time risk assessment
+- **Volatility Monitoring**: Real-time risk assessment and circuit breakers
+- **Advanced Risk Manager**: Comprehensive risk event tracking and database logging
 
 ### 🔧 Technical Features
-- **Async Architecture**: High-performance concurrent processing
+- **Async Architecture**: High-performance concurrent processing with asyncio
 - **Modular Design**: Pluggable strategies and components
-- **Comprehensive Testing**: 90%+ test coverage
-- **Production Ready**: Monitoring, logging, error handling
+- **Comprehensive Testing**: 90%+ test coverage across all modules
+- **Production Ready**: Monitoring, logging, error handling, health checks
 - **Scalable**: Horizontal and vertical scaling support
+- **Database Integration**: SQLite, PostgreSQL, Redis caching
 
 ## 🏗️ Architecture
 
@@ -89,13 +93,16 @@ This is a sophisticated crypto trading bot that combines **statistical arbitrage
 
 ### Core Modules
 
-- **`src/data_collector.py`**: Multi-source data ingestion
-- **`src/strategy/stat_arb.py`**: Statistical arbitrage logic
-- **`src/strategy/sentiment.py`**: LLM sentiment analysis
-- **`src/strategy/signal_generator.py`**: Signal combination
-- **`src/execution/order_manager.py`**: Order execution
-- **`src/execution/risk_manager.py`**: Risk controls
-- **`src/utils/monitoring.py`**: Metrics and health checks
+- **`src/data_collector.py`**: Multi-source data ingestion with WebSocket streaming
+- **`src/strategy/stat_arb.py`**: Statistical arbitrage with cointegration analysis
+- **`src/strategy/sentiment.py`**: LLM sentiment analysis with VADER and GPT-3.5-turbo
+- **`src/strategy/signal_generator.py`**: Advanced signal combination and portfolio optimization
+- **`src/execution/order_manager.py`**: Order execution with retry logic and slippage handling
+- **`src/execution/risk_manager.py`**: Comprehensive risk controls and event tracking
+- **`src/execution/position_manager.py`**: Position tracking and PnL calculation
+- **`src/backtesting/`**: Complete backtesting engine with performance analysis
+- **`src/ml/`**: Machine learning signal filtering and optimization
+- **`src/utils/monitoring.py`**: Metrics collection and health checks
 
 ## 🚀 Quick Start
 
@@ -144,9 +151,17 @@ OPENAI_API_KEY=your_openai_api_key
 NEWSAPI_KEY=your_newsapi_key
 REDDIT_CLIENT_ID=your_reddit_client_id
 REDDIT_CLIENT_SECRET=your_reddit_client_secret
+CRYPTOPANIC_API_KEY=your_cryptopanic_api_key
 ```
 
-### 3. Run the Bot
+### 3. Collect Historical Data
+
+```bash
+# Collect historical data for backtesting
+python get_historical_data.py --symbols ETH,BTC,SOL --exchanges binance,kraken --limit 5000
+```
+
+### 4. Run the Bot
 
 ```bash
 # Simulation mode (default)
@@ -159,13 +174,23 @@ python run_bot.py --live
 python run_bot.py --test
 ```
 
-### 4. Start Dashboard
+### 5. Start Dashboard
 
 ```bash
 # Web dashboard
 python dashboard.py
 
 # Access at: http://localhost:5001
+```
+
+### 6. Run Backtesting
+
+```bash
+# Run backtest with default parameters
+python run_backtest.py --days 180 --capital 100000
+
+# Run with custom parameters
+python run_backtest.py --days 90 --capital 50000 --z-threshold 1.5 --sentiment --plots
 ```
 
 ## ⚙️ Configuration
@@ -180,11 +205,19 @@ strategy:
     z_score_threshold: 1.0
     cointegration_lookback: 50
     correlation_threshold: 0.3
+    spread_model: 'ols'  # or 'kalman', 'rolling_ols'
+    slippage: 0.0005
     
   sentiment_analysis:
     enabled: true
     model: "gpt-3.5-turbo"
     confidence_threshold: 0.5
+    
+  signal_generator:
+    combination_method: "consensus"  # consensus, weighted, filter, hybrid
+    stat_weight: 0.7
+    sentiment_weight: 0.3
+    min_confidence: 0.2
 
 risk:
   max_position_size: 10000
@@ -192,15 +225,18 @@ risk:
   stop_loss_percentage: 0.08
   take_profit_percentage: 0.15
   max_total_exposure: 0.7
+  max_daily_drawdown: 0.05
+  max_total_drawdown: 0.15
 ```
 
 ### Risk Management
 
-- **Position Sizing**: Dynamic allocation based on volatility
+- **Position Sizing**: Dynamic allocation based on volatility and correlation
 - **Stop-Loss**: 8% default, configurable per strategy
 - **Take-Profit**: 15% default, trailing stops available
 - **Portfolio Limits**: 70% max exposure, 30% per asset
 - **Drawdown Controls**: 5% daily, 15% total maximum
+- **Circuit Breakers**: Automatic trading pause on risk events
 
 ## 📖 Usage
 
@@ -223,13 +259,14 @@ await bot.start()
 from src.strategy.stat_arb import StatisticalArbitrage
 
 # Initialize strategy
-stat_arb = StatisticalArbitrage(
-    z_score_threshold=1.0,
-    correlation_threshold=0.3
-)
+stat_arb = StatisticalArbitrage({
+    'z_score_threshold': 1.0,
+    'correlation_threshold': 0.3,
+    'spread_model': 'ols'
+})
 
 # Generate signals
-signals = await stat_arb.generate_signals(market_data)
+signals = await stat_arb.generate_signals()
 ```
 
 #### Sentiment Analysis
@@ -240,7 +277,22 @@ from src.strategy.sentiment import SentimentAnalyzer
 sentiment = SentimentAnalyzer(model="gpt-3.5-turbo")
 
 # Analyze sentiment
-score = await sentiment.analyze_text("Bitcoin reaches new highs")
+score = await sentiment.analyze_sentiment("Bitcoin reaches new highs")
+```
+
+#### Signal Generation
+```python
+from src.strategy.signal_generator import SignalGenerator
+
+# Initialize signal generator
+signal_gen = SignalGenerator(
+    stat_arb=stat_arb,
+    sentiment_analyzer=sentiment,
+    config={'combination_method': 'weighted'}
+)
+
+# Generate combined signals
+signals = signal_gen.generate_signals(market_data, sentiment_data)
 ```
 
 ### Demo Applications
@@ -255,8 +307,14 @@ python examples/sentiment_demo.py
 # Order management demo
 python examples/order_manager_demo.py
 
+# Risk management demo
+python examples/risk_manager_demo.py
+
 # Backtesting demo
 python examples/backtest_demo.py
+
+# Enhanced signal generator demo
+python examples/signal_generator_enhanced_demo.py
 ```
 
 ## 🔌 API Documentation
@@ -269,6 +327,8 @@ python examples/backtest_demo.py
 - `GET /positions` - Current positions
 - `GET /trades` - Recent trades
 - `GET /signals` - Generated signals
+- `GET /risk/events` - Risk events
+- `GET /risk/metrics` - Risk metrics
 
 ### WebSocket Events
 
@@ -276,6 +336,20 @@ python examples/backtest_demo.py
 - `signal_generated` - New trading signals
 - `position_update` - Position changes
 - `trade_executed` - Trade confirmations
+- `risk_event` - Risk management events
+
+### Configuration API
+
+```python
+from src.utils.config_loader import config
+
+# Get configuration values
+trading_enabled = config.get('TRADING_ENABLED', 'false')
+z_threshold = config.get('strategy.statistical_arbitrage.z_score_threshold', 2.0)
+
+# Get exchange config
+binance_config = config.get_exchange_config('binance')
+```
 
 ## 🧪 Testing
 
@@ -288,13 +362,16 @@ python -m pytest tests/ --cov=src --cov-report=html
 python -m pytest tests/test_stat_arb.py -v
 python -m pytest tests/test_sentiment.py -v
 python -m pytest tests/test_risk_manager.py -v
+python -m pytest tests/test_order_manager.py -v
+python -m pytest tests/test_backtesting.py -v
 ```
 
 ### Test Coverage
-- **Unit Tests**: 90%+ coverage
+- **Unit Tests**: 90%+ coverage across all modules
 - **Integration Tests**: End-to-end workflows
 - **Performance Tests**: Load and stress testing
 - **Security Tests**: API key validation, input sanitization
+- **Backtesting Tests**: Strategy validation and optimization
 
 ## 🚀 Deployment
 
@@ -305,15 +382,21 @@ python -m pytest tests/test_risk_manager.py -v
 docker build -t crypto-trading-bot .
 
 # Run with Docker Compose
-docker-compose up -d
+docker-compose -f docker/docker-compose.yml up -d
 
 # Check status
 docker-compose ps
+
+# View logs
+docker-compose logs -f trading-bot
 ```
 
 ### Kubernetes Deployment
 
 ```bash
+# Create namespace
+kubectl apply -f k8s/namespace.yaml
+
 # Deploy to cluster
 kubectl apply -f k8s/
 
@@ -349,6 +432,7 @@ Access Grafana at `http://localhost:3000` (admin/admin)
 - System resources (CPU, memory, network)
 - API response times and error rates
 - Portfolio exposure and risk metrics
+- Signal generation and execution rates
 
 ### Alerts
 
@@ -356,6 +440,7 @@ Access Grafana at `http://localhost:3000` (admin/admin)
 - **API Errors**: >5% error rate
 - **System Resources**: >80% CPU/memory usage
 - **Trading Alerts**: Large position changes
+- **Risk Events**: Circuit breaker triggers
 
 ### Logging
 
@@ -363,6 +448,7 @@ Access Grafana at `http://localhost:3000` (admin/admin)
 - **Log Levels**: DEBUG, INFO, WARNING, ERROR
 - **Log Rotation**: Daily rotation with compression
 - **Centralized Logging**: ELK stack integration
+- **Risk Event Logging**: Database storage for audit trails
 
 ## 🔧 Development
 
@@ -371,15 +457,25 @@ Access Grafana at `http://localhost:3000` (admin/admin)
 crypto-trading-bot/
 ├── src/                    # Main source code
 │   ├── strategy/          # Trading strategies
+│   │   ├── stat_arb.py   # Statistical arbitrage
+│   │   ├── sentiment.py  # Sentiment analysis
+│   │   └── signal_generator.py # Signal combination
 │   ├── execution/         # Order execution
-│   ├── utils/             # Utilities and helpers
-│   └── main.py           # Main application
+│   │   ├── order_manager.py # Order management
+│   │   ├── risk_manager.py # Risk management
+│   │   └── position_manager.py # Position tracking
+│   ├── backtesting/       # Backtesting engine
+│   ├── ml/               # Machine learning
+│   ├── optimization/     # Strategy optimization
+│   ├── utils/            # Utilities and helpers
+│   └── main.py          # Main application
 ├── tests/                 # Test suite
 ├── examples/              # Demo applications
 ├── config/               # Configuration files
 ├── docker/               # Docker configurations
 ├── k8s/                  # Kubernetes manifests
-├── docs/                 # Documentation
+├── data/                 # Data storage
+├── logs/                 # Log files
 └── scripts/              # Utility scripts
 ```
 
@@ -417,6 +513,7 @@ mypy src/
 - **Order Execution**: <50ms average
 - **Memory Usage**: <2GB typical
 - **CPU Usage**: <30% average
+- **Backtesting Speed**: 1000x faster than real-time
 
 ### Scalability
 
@@ -424,6 +521,7 @@ mypy src/
 - **Vertical Scaling**: Resource limits and requests
 - **Database Scaling**: Read replicas, sharding
 - **Cache Scaling**: Redis cluster, CDN
+- **Load Balancing**: Nginx reverse proxy
 
 ## 🛡️ Security
 
@@ -434,6 +532,7 @@ mypy src/
 - **Input Validation**: Sanitized user inputs
 - **Rate Limiting**: API abuse prevention
 - **Audit Logging**: Complete activity tracking
+- **Risk Event Tracking**: Database logging for compliance
 
 ### Best Practices
 
@@ -442,6 +541,7 @@ mypy src/
 - Regularly rotate API keys
 - Monitor for suspicious activity
 - Keep dependencies updated
+- Use non-root containers in production
 
 ## 📄 License
 
