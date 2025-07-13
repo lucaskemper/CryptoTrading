@@ -568,7 +568,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **⚠️ Disclaimer**: This software is for educational and research purposes. Trading cryptocurrencies involves substantial risk of loss. Use at your own risk and never invest more than you can afford to lose.
 
 **📊 Performance**: Past performance does not guarantee future results. Always backtest strategies thoroughly before live trading.
-
----
-
-Made with ❤️ by the Crypto Trading Bot Team
