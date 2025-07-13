@@ -1,0 +1,160 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trading-bot-config
+  namespace: crypto-trading
+data:
+  config.yaml: |
+    # Crypto Trading Bot Configuration
+    
+    # Data Collection Settings
+    data_collection:
+      market_data_interval: 30  # seconds
+      sentiment_data_interval: 300  # seconds (5 minutes)
+      symbols:
+        - ETH/USDT
+        - SOL/USDT
+        - BTC/USDT
+      exchanges:
+        - binance
+        - kraken
+    
+    # Sentiment Sources
+    sentiment:
+      reddit_subreddits:
+        - CryptoCurrency
+        - ethtrader
+        - solana
+      news_keywords:
+        - bitcoin
+        - ethereum
+        - solana
+        - crypto
+        - blockchain
+    
+    # Database Settings
+    database:
+      sqlite_path: "data/trading_bot.db"
+      csv_dir: "data/"
+      postgres_url: "postgresql://tradingbot:password@postgres:5432/tradingbot"
+    
+    # Logging
+    logging:
+      level: "INFO"
+      file_rotation: "daily"
+    
+    # Risk Management
+    risk:
+      max_position_size: 10000
+      max_order_size: 10000
+      risk_per_trade: 0.10
+      initial_portfolio_value: 100000
+      stop_loss_percentage: 0.08
+      take_profit_percentage: 0.15
+      max_total_exposure: 0.7
+      max_single_asset_exposure: 0.3
+      max_correlated_exposure: 0.4
+      max_daily_drawdown: 0.05
+      max_total_drawdown: 0.15
+      max_open_positions: 8
+      max_positions_per_asset: 3
+      max_consecutive_losses: 7
+      volatility_threshold: 0.15
+      max_leverage: 1.0
+      min_correlation_threshold: 0.5
+      sector_exposure_limit: 0.4
+    
+    # Order Execution
+    execution:
+      order_manager:
+        max_retries: 3
+        retry_delay: 1.0
+        max_slippage: 0.02
+        order_timeout: 300
+        batch_size_limit: 3
+        enable_partial_fills: true
+        auto_cancel_expired: true
+        exchange_settings:
+          binance:
+            default_type: "spot"
+            enable_rate_limit: true
+            options:
+              defaultType: "spot"
+          kraken:
+            default_type: "spot"
+            enable_rate_limit: true
+            options:
+              defaultType: "spot"
+    
+    # Trading Strategy
+    strategy:
+      use_enhanced_stat_arb: true
+      statistical_arbitrage:
+        enabled: true
+        z_score_threshold: 1.0
+        cointegration_lookback: 50
+        correlation_threshold: 0.3
+        cointegration_pvalue_threshold: 0.2
+        position_size_limit: 0.2
+        stop_loss_pct: 0.10
+        take_profit_pct: 0.20
+        max_positions: 5
+        rebalance_frequency: 300
+        dynamic_threshold_window: 100
+        spread_model: 'ols'
+        slippage: 0.0005
+        rsi_period: 14
+        rsi_oversold: 30
+        rsi_overbought: 70
+        bb_period: 20
+        bb_std: 2.0
+        macd_fast: 12
+        macd_slow: 26
+        macd_signal: 9
+        ma_short: 10
+        ma_long: 30
+        stat_arb_weight: 0.4
+        mean_reversion_weight: 0.3
+        momentum_weight: 0.2
+        volatility_weight: 0.1
+        volatility_period: 20
+        min_volatility: 0.01
+        max_volatility: 0.05
+      sentiment_analysis:
+        enabled: true
+        model: "gpt-3.5-turbo"
+        confidence_threshold: 0.5
+      signal_generator:
+        enabled: true
+        combination_method: "consensus"
+        stat_weight: 0.7
+        sentiment_weight: 0.3
+        min_confidence: 0.2
+        sentiment_thresholds:
+          positive: 0.1
+          negative: -0.1
+          neutral: 0.0
+        enable_risk_checks: true
+        require_risk_approval: false
+        max_signals_per_batch: 5
+        signal_timeout_seconds: 300
+        enable_streaming: false
+        stream_interval: 30
+        portfolio_rebalance_threshold: 0.1
+        max_portfolio_deviation: 0.2
+        correlation_threshold: 0.5
+    
+    # Trading Configuration
+    trading:
+      symbols: [
+        "BTC/USDT", "ETH/USDT", "SOL/USDT", "ADA/USDT", "DOT/USDT",
+        "LINK/USDT", "MATIC/USDT", "AVAX/USDT", "UNI/USDT", "ATOM/USDT",
+        "LTC/USDT", "XRP/USDT", "BCH/USDT", "ETC/USDT", "FIL/USDT",
+        "NEAR/USDT", "ALGO/USDT", "VET/USDT", "ICP/USDT", "FTM/USDT"
+      ]
+      base_currency: "USDT"
+      quote_currency: "USDT"
+      min_order_size: 10
+      max_order_size: 10000
+      price_precision: 2
+      quantity_precision: 6 

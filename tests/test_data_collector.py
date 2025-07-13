@@ -9,8 +9,9 @@ import pandas as pd
 from datetime import datetime
 from src.data_collector import (
     data_collector, ExchangeDataCollector, SentimentDataCollector,
-    SentimentAnalyzer, MarketData, OrderBookData, SentimentData
+    MarketData, OrderBookData
 )
+from src.strategy.sentiment import SentimentAnalyzer, SentimentData
 
 
 def test_sentiment_analyzer():

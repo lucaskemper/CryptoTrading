@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: crypto-trading
+  labels:
+    name: crypto-trading
+    app: trading-bot 

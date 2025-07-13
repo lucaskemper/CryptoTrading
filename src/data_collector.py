@@ -20,11 +20,14 @@ import threading
 from queue import Queue
 import os
 import re
-from textblob import TextBlob
 import numpy as np
+import logging
+import csv
+import argparse
 
 from src.utils.logger import logger
 from src.utils.config_loader import config
+from src.strategy.sentiment import SentimentData, SentimentAnalyzer
 
 
 @dataclass
@@ -76,66 +79,7 @@ class OrderBookData:
         return True
 
 
-@dataclass
-class SentimentData:
-    """Sentiment data structure."""
-    timestamp: datetime
-    source: str
-    text: str
-    sentiment_score: Optional[float] = None
-    keywords: List[str] = None
-    url: Optional[str] = None
-    
-    def validate(self) -> bool:
-        """Validate sentiment data."""
-        if not self.text or len(self.text.strip()) == 0:
-            return False
-        if self.sentiment_score is not None and not (-1 <= self.sentiment_score <= 1):
-            return False
-        return True
 
-
-class SentimentAnalyzer:
-    """Handles sentiment analysis and keyword extraction."""
-    
-    def __init__(self):
-        self.crypto_keywords = [
-            'bitcoin', 'btc', 'ethereum', 'eth', 'solana', 'sol', 'crypto', 
-            'blockchain', 'defi', 'nft', 'altcoin', 'moon', 'pump', 'dump',
-            'hodl', 'fomo', 'fud', 'bull', 'bear', 'mooning', 'crashing'
-        ]
-    
-    def analyze_sentiment(self, text: str) -> float:
-        """Analyze sentiment using TextBlob."""
-        try:
-            blob = TextBlob(text)
-            return blob.sentiment.polarity
-        except Exception as e:
-            logger.error(f"Error analyzing sentiment: {e}")
-            return 0.0
-    
-    def extract_keywords(self, text: str) -> List[str]:
-        """Extract crypto-related keywords from text."""
-        try:
-            # Convert to lowercase and find keywords
-            text_lower = text.lower()
-            found_keywords = []
-            
-            for keyword in self.crypto_keywords:
-                if keyword in text_lower:
-                    found_keywords.append(keyword)
-            
-            # Also extract hashtags and mentions
-            hashtags = re.findall(r'#(\w+)', text)
-            mentions = re.findall(r'@(\w+)', text)
-            
-            found_keywords.extend(hashtags)
-            found_keywords.extend(mentions)
-            
-            return list(set(found_keywords))  # Remove duplicates
-        except Exception as e:
-            logger.error(f"Error extracting keywords: {e}")
-            return []
 
 
 class ExchangeDataCollector:
@@ -846,6 +790,72 @@ class DataCollector:
     def get_latest_market_data(self, symbol: str, exchange: str) -> Optional[MarketData]:
         """Get latest market data for a symbol."""
         return self.exchange_collector.get_ticker(symbol, exchange)
+
+
+class BinanceWebSocketCollector:
+    """
+    Collects high-frequency trade and order book data from Binance WebSocket API.
+    Streams data for a given symbol and saves to CSV in data/market_data_{symbol}/.
+    """
+    BASE_URL = "wss://stream.binance.com:9443/ws/"
+
+    def __init__(self, symbol: str, data_type: str = "trade"):
+        """
+        Args:
+            symbol: Symbol in Binance format (e.g., 'btcusdt')
+            data_type: 'trade' or 'depth' (order book)
+        """
+        self.symbol = symbol.lower()
+        self.data_type = data_type
+        self.ws_url = self._get_ws_url()
+        self.output_dir = f"data/market_data_{symbol.upper()}/"
+        os.makedirs(self.output_dir, exist_ok=True)
+        self.output_file = os.path.join(self.output_dir, f"{data_type}_stream_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
+        self.logger = logging.getLogger("BinanceWebSocketCollector")
+        self.logger.setLevel(logging.INFO)
+
+    def _get_ws_url(self) -> str:
+        if self.data_type == "trade":
+            return f"{self.BASE_URL}{self.symbol}@trade"
+        elif self.data_type == "depth":
+            return f"{self.BASE_URL}{self.symbol}@depth"
+        else:
+            raise ValueError("data_type must be 'trade' or 'depth'")
+
+    async def collect(self, max_messages: int = 1000):
+        """
+        Connects to Binance WebSocket and streams data to CSV.
+        Args:
+            max_messages: Number of messages to collect before stopping.
+        """
+        self.logger.info(f"Connecting to {self.ws_url}")
+        async with websockets.connect(self.ws_url) as ws:
+            with open(self.output_file, mode="w", newline="") as f:
+                writer = None
+                count = 0
+                async for message in ws:
+                    data = json.loads(message)
+                    if writer is None:
+                        # Write header
+                        writer = csv.DictWriter(f, fieldnames=list(data.keys()))
+                        writer.writeheader()
+                    writer.writerow(data)
+                    count += 1
+                    if count % 100 == 0:
+                        self.logger.info(f"Collected {count} messages...")
+                    if count >= max_messages:
+                        self.logger.info(f"Reached {max_messages} messages. Stopping.")
+                        break
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Binance WebSocket Data Collector")
+    parser.add_argument("--symbol", type=str, required=True, help="Symbol (e.g., BTCUSDT)")
+    parser.add_argument("--data-type", type=str, choices=["trade", "depth"], default="trade", help="Data type: trade or depth (order book)")
+    parser.add_argument("--max-messages", type=int, default=1000, help="Number of messages to collect")
+    args = parser.parse_args()
+
+    collector = BinanceWebSocketCollector(symbol=args.symbol, data_type=args.data_type)
+    asyncio.run(collector.collect(max_messages=args.max_messages))
 
 
 # Global data collector instance

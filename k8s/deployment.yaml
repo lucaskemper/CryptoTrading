@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trading-bot
+  namespace: crypto-trading
+  labels:
+    app: trading-bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trading-bot
+  template:
+    metadata:
+      labels:
+        app: trading-bot
+    spec:
+      containers:
+      - name: trading-bot
+        image: crypto-trading-bot:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: TRADING_ENABLED
+          value: "false"
+        - name: SIMULATION_MODE
+          value: "true"
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        - name: DATABASE_URL
+          value: "postgresql://tradingbot:$(POSTGRES_PASSWORD)@postgres:5432/tradingbot"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: trading-bot-secrets
+              key: postgres_password
+        - name: BINANCE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: trading-bot-secrets
+              key: binance_api_key
+        - name: BINANCE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: trading-bot-secrets
+              key: binance_secret_key
+        - name: KRAKEN_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: trading-bot-secrets
+              key: kraken_api_key
+        - name: KRAKEN_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: trading-bot-secrets
+              key: kraken_secret_key
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: trading-bot-secrets
+              key: openai_api_key
+        - name: NEWSAPI_KEY
+          valueFrom:
+            secretKeyRef:
+              name: trading-bot-secrets
+              key: newsapi_key
+        - name: REDDIT_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: trading-bot-secrets
+              key: reddit_client_id
+        - name: REDDIT_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: trading-bot-secrets
+              key: reddit_client_secret
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        - name: data-volume
+          mountPath: /app/data
+        - name: logs-volume
+          mountPath: /app/logs
+      volumes:
+      - name: config-volume
+        configMap:
+          name: trading-bot-config
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: trading-bot-data-pvc
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: trading-bot-logs-pvc
+      restartPolicy: Always 

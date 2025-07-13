@@ -147,8 +147,8 @@ class StatisticalArbitrage:
         self.dynamic_threshold_window = self.config.get('dynamic_threshold_window', 100)
         self.spread_model = self.config.get('spread_model', 'ols')
         self.slippage = self.config.get('slippage', 0.0)
-        self.lookback_period = self.config.get('lookback_period', 100)
-        self.correlation_threshold = self.config.get('correlation_threshold', 0.7)
+        self.lookback_period = self.config.get('lookback_period', 50)  # Reduced from 100
+        self.correlation_threshold = self.config.get('correlation_threshold', 0.6)  # Reduced from 0.7
         self.cointegration_pvalue_threshold = self.config.get('cointegration_pvalue_threshold', 0.05)
         self.min_spread_std = self.config.get('min_spread_std', 0.001)
         self.position_size_limit = self.config.get('position_size_limit', 0.1)
@@ -214,27 +214,39 @@ class StatisticalArbitrage:
     def find_cointegrated_pairs(self, assets: List[str]) -> List[Tuple[str, str]]:
         """
         Find cointegrated pairs from a list of assets.
+        Also accepts highly correlated pairs as fallback for crypto assets.
         
         Args:
             assets: List of asset symbols
             
         Returns:
-            List of cointegrated asset pairs
+            List of cointegrated or highly correlated asset pairs
         """
         cointegrated_pairs = []
         
+        self.logger.info(f"Looking for pairs among assets: {assets}")
+        self.logger.info(f"Available price data keys: {list(self.price_data.keys())}")
+        
         for i, asset1 in enumerate(assets):
             for asset2 in assets[i+1:]:
+                self.logger.info(f"Testing pair: {asset1}-{asset2}")
+                
                 if asset1 not in self.price_data or asset2 not in self.price_data:
+                    self.logger.warning(f"Missing price data for {asset1} or {asset2}")
                     continue
                 
                 # Align price data
                 price1 = self.price_data[asset1]
                 price2 = self.price_data[asset2]
                 
+                self.logger.info(f"Price data lengths: {asset1}={len(price1)}, {asset2}={len(price2)}")
+                
                 # Find common timestamps
                 common_times = price1.index.intersection(price2.index)
+                self.logger.info(f"Common timestamps: {len(common_times)}")
+                
                 if len(common_times) < self.lookback_period:
+                    self.logger.warning(f"Insufficient common data points: {len(common_times)} < {self.lookback_period}")
                     continue
                 
                 price1_aligned = price1[common_times]
@@ -242,15 +254,23 @@ class StatisticalArbitrage:
                 
                 # Calculate correlation
                 correlation = price1_aligned.corr(price2_aligned)
+                self.logger.info(f"Correlation {asset1}-{asset2}: {correlation:.4f}")
                 
                 if abs(correlation) < self.correlation_threshold:
+                    self.logger.warning(f"Correlation {correlation:.4f} below threshold {self.correlation_threshold}")
                     continue
                 
                 # Test for cointegration
                 try:
                     score, pvalue, _ = coint(price1_aligned, price2_aligned)
                     
-                    if pvalue < self.cointegration_pvalue_threshold:
+                    # Accept both cointegrated pairs AND highly correlated pairs
+                    is_cointegrated = pvalue < self.cointegration_pvalue_threshold
+                    is_highly_correlated = abs(correlation) > 0.8  # High correlation threshold
+                    
+                    self.logger.info(f"Cointegration test: p-value={pvalue:.4f}, is_cointegrated={is_cointegrated}, is_highly_correlated={is_highly_correlated}")
+                    
+                    if is_cointegrated or is_highly_correlated:
                         # Calculate hedge ratio using OLS regression
                         ols_model = OLS(price1_aligned.values, price2_aligned.values)
                         ols_result = ols_model.fit()
@@ -260,6 +280,8 @@ class StatisticalArbitrage:
                         spread_mean = spread.mean()
                         spread_std = spread.std()
                         
+                        self.logger.info(f"Spread std: {spread_std:.6f}, min required: {self.min_spread_std}")
+                        
                         if spread_std > self.min_spread_std:
                             pair_key = f"{asset1}_{asset2}"
                             self.pairs_data[pair_key] = PairData(
@@ -267,15 +289,21 @@ class StatisticalArbitrage:
                                 asset2=asset2,
                                 correlation=correlation,
                                 cointegration_pvalue=pvalue,
-                                is_cointegrated=True,
+                                is_cointegrated=is_cointegrated,
                                 spread_mean=spread_mean,
                                 spread_std=spread_std,
                                 hedge_ratio=hedge_ratio,
                                 last_update=datetime.now()
                             )
                             cointegrated_pairs.append((asset1, asset2))
-                            self.logger.info(f"Found cointegrated pair: {asset1}-{asset2} "
+                            
+                            pair_type = "cointegrated" if is_cointegrated else "highly correlated"
+                            self.logger.info(f"Found {pair_type} pair: {asset1}-{asset2} "
                                            f"(correlation: {correlation:.3f}, p-value: {pvalue:.3f}, hedge_ratio: {hedge_ratio:.4f})")
+                        else:
+                            self.logger.warning(f"Spread std {spread_std:.6f} too low, minimum required: {self.min_spread_std}")
+                    else:
+                        self.logger.warning(f"Pair {asset1}-{asset2} doesn't meet cointegration or high correlation criteria")
                 
                 except Exception as e:
                     self.logger.warning(f"Error testing cointegration for {asset1}-{asset2}: {e}")

@@ -1,0 +1,10 @@
+Backtest Results Summary
+======================
+
+Period: 2025-07-06 17:45:04.241506 to 2025-07-13 17:45:04.241506
+Total Return: 0.00%
+Annualized Return: 0.00%
+Sharpe Ratio: 0.000
+Max Drawdown: nan%
+Win Rate: 0.00%
+Total Trades: 0

@@ -1,0 +1,14 @@
+{
+  "total_return": -0.002399173365828174,
+  "annualized_return": -0.0023991733658281778,
+  "sharpe_ratio": -0.23379286415150954,
+  "max_drawdown": -0.002399173365828174,
+  "win_rate": 0.0,
+  "profit_factor": Infinity,
+  "total_trades": 1674,
+  "winning_trades": 0,
+  "losing_trades": 0,
+  "final_portfolio_value": 99760.08266341718,
+  "peak_portfolio_value": 100000.0,
+  "volatility": 0.00026512836028052416
+}

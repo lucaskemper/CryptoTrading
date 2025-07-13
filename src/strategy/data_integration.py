@@ -15,8 +15,8 @@ import time
 
 from data_collector import DataCollector, MarketData
 from strategy.stat_arb import StatisticalArbitrage, create_stat_arb_strategy
-from utils.logger import logger
-from utils.config_loader import config
+from src.utils.logger import logger
+from src.utils.config_loader import config
 
 
 class StrategyDataIntegration:
