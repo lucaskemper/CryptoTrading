@@ -1,0 +1,15 @@
+ccxt
+pandas
+numpy
+scikit-learn
+statsmodels
+transformers
+requests
+python-dotenv
+websockets
+PyYAML
+asyncio
+textblob
+scipy
+matplotlib
+seaborn

@@ -1,0 +1,65 @@
+# Crypto Trading Bot Configuration
+
+# Data Collection Settings
+data_collection:
+  market_data_interval: 30  # seconds
+  sentiment_data_interval: 300  # seconds (5 minutes)
+  symbols:
+    - ETH/USDT
+    - SOL/USDT
+    - BTC/USDT
+  exchanges:
+    - binance
+    - kraken
+
+# Sentiment Sources
+sentiment:
+  reddit_subreddits:
+    - CryptoCurrency
+    - ethtrader
+    - solana
+  news_keywords:
+    - bitcoin
+    - ethereum
+    - solana
+    - crypto
+    - blockchain
+
+# Database Settings
+database:
+  sqlite_path: "data/trading_bot.db"
+  csv_dir: "data/"
+  postgres_url: ""  # Optional for production
+
+# Logging
+logging:
+  level: "INFO"
+  file_rotation: "daily"
+
+# Risk Management
+risk:
+  max_position_size: 0.1  # 10% of portfolio
+  stop_loss_percentage: 0.05  # 5%
+  take_profit_percentage: 0.1  # 10%
+
+# Trading Strategy
+strategy:
+  statistical_arbitrage:
+    enabled: true
+    z_score_threshold: 2.0  # or 'dynamic' for adaptive thresholds
+    cointegration_lookback: 100
+    correlation_threshold: 0.7
+    cointegration_pvalue_threshold: 0.05
+    min_spread_std: 0.001
+    position_size_limit: 0.1
+    stop_loss_pct: 0.05
+    take_profit_pct: 0.1
+    max_positions: 5
+    rebalance_frequency: 300  # seconds
+    dynamic_threshold_window: 100  # for dynamic z-score thresholds
+    spread_model: 'ols'  # 'ols', 'kalman', 'rolling_ols' (future)
+    slippage: 0.001  # 0.1% slippage per trade for backtesting
+  sentiment_analysis:
+    enabled: true
+    model: "gpt-3.5-turbo"  # or "finbert"
+    confidence_threshold: 0.7

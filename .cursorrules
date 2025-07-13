@@ -1,0 +1,56 @@
+# .cursorrules
+
+project_name: Crypto Trading & Arbitrage Bot
+
+description: |
+  Automated trading and arbitrage bot for Solana and Ethereum.
+  Combines statistical arbitrage strategies with LLM-powered sentiment analysis.
+  Real-time data collection, order execution, and risk management.
+  Modular Python codebase, cloud-ready, Docker support.
+
+scope:
+  - Automated trading and arbitrage
+  - Solana (SOL) and Ethereum (ETH) assets
+  - Statistical models (Z-score, cointegration)
+  - LLM-based sentiment analysis (news, Twitter, Reddit)
+  - High-frequency and daily trading
+  - Risk management: stop-loss, take-profit, position sizing
+
+modules:
+  - src/data_collector.py: Data ingestion from exchanges and sentiment sources
+  - src/strategy/stat_arb.py: Statistical arbitrage logic
+  - src/strategy/sentiment.py: LLM sentiment analysis
+  - src/strategy/signal_generator.py: Signal combination logic
+  - src/execution/order_manager.py: Order execution and management
+  - src/execution/risk_manager.py: Risk controls
+  - src/utils/logger.py: Logging utilities
+  - src/utils/config_loader.py: Config/environment variable loading
+
+coding_standards:
+  - Use Python 3.9+ syntax
+  - Follow PEP8 style guide
+  - Use type hints where possible
+  - Write clear docstrings for all public functions/classes
+  - Modular, testable code
+  - Log all critical actions and errors
+
+llm_instructions:
+  - Always check for required imports
+  - Use environment variables for secrets, never hardcode API keys
+  - Provide examples and docstrings for new functions
+  - When adding a new feature, update README.md and relevant docs
+  - Write corresponding tests in the tests/ directory for new modules
+
+file_structure_reference: |
+  config/
+  data/
+  docker/
+  docs/
+  notebooks/
+  src/
+    strategy/
+    execution/
+    utils/
+  tests/
+
+# End of .cursorrules
